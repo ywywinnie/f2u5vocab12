@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>F.2 Unit 5 (1) Wonderful Wildlife</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        nature: {
+                            olive: '#729329',
+                            leaf: '#99ca3c',
+                            sun: '#fcd34d',
+                            peach: '#ff9854',
+                            bg: '#faf8f2',
+                            dark: '#354813'
+                        },
+                        jungle: {
+                            50: '#f7f9f0',
+                            100: '#ebf2d7',
+                            200: '#d7e6af',
+                            500: '#729329',
+                            600: '#628120',
+                            700: '#4d6718',
+                            800: '#3c5112',
+                            900: '#28380a',
+                        },
+                        savannah: '#fef3c7',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf.js for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        * {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f3f1e9;
+            font-family: 'Inter', -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Semi-transparent background for reading canvas */
+        .working-area-bg {
+            background: linear-gradient(rgba(255, 255, 255, 0.93), rgba(255, 255, 255, 0.93)),
+                        url('https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+        }
+
+        /* Blank interactive targets */
+        .blank-drop-target {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 125px;
+            height: 38px;
+            padding: 2px 10px;
+            margin: 0 4px;
+            border-bottom: 3px dashed #729329;
+            background-color: #f7f9f0;
+            border-radius: 8px;
+            font-weight: 700;
+            color: #354813;
+            vertical-align: middle;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        .blank-drop-target.filled {
+            border-bottom: 3px solid #729329;
+            background-color: #ebf2d7;
+        }
+
+        .blank-drop-target.drag-over {
+            background-color: #fef3c7;
+            border-color: #ff9854;
+            transform: scale(1.04);
+        }
+
+        .word-chip {
+            touch-action: manipulation;
+            user-select: none;
+            min-height: 36px;
+            padding: 4px 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .word-chip:hover:not(.used), .word-chip:active:not(.used) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(114, 147, 41, 0.2);
+        }
+
+        .word-chip.selected {
+            background-color: #ff9854 !important;
+            color: #ffffff !important;
+            border-color: #e07f3c !important;
+            transform: scale(1.04);
+            box-shadow: 0 0 0 3px rgba(255, 152, 84, 0.3);
+        }
+
+        .word-chip.used {
+            opacity: 0.35;
+            background-color: #e2e8f0 !important;
+            border-color: #cbd5e1 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        .feedback-badge-correct {
+            background-color: #ebf2d7;
+            color: #354813;
+            border: 1px solid #99ca3c;
+        }
+
+        .feedback-badge-wrong {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fca5a5;
+        }
+
+        .feedback-badge-skipped {
+            background-color: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col items-center justify-center p-2 sm:p-4 md:p-6">
+
+    <div class="w-full max-w-7xl bg-white rounded-3xl shadow-xl overflow-hidden border border-amber-100/60 flex flex-col min-h-[92vh]">
+
+        <!-- HEADER BAR -->
+        <header class="bg-gradient-to-r from-nature-dark via-nature-olive to-[#55721c] text-white px-6 py-4 flex flex-wrap justify-between items-center shadow-md shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl text-amber-200 border border-white/20">
+                    <i class="fa-solid fa-hippo"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-tight text-amber-100">F.2 Unit 5 (1) Wonderful Wildlife</h1>
+                    <p class="text-xs text-amber-200/90 font-medium">Interactive Vocabulary & Context Clues Practice</p>
+                </div>
+            </div>
+            <div id="header-user-badge" class="hidden flex items-center gap-2 bg-white/15 px-3 py-1.5 rounded-full border border-white/20 text-xs sm:text-sm font-semibold">
+                <i class="fa-solid fa-user-circle text-amber-200"></i>
+                <span id="header-student-name" class="truncate max-w-[150px]">Student</span>
+            </div>
+        </header>
+
+        <!-- MAIN APP CONTENT AREA -->
+        <main class="flex-1 flex flex-col relative overflow-hidden bg-nature-bg">
+
+            <!-- PAGE 1: WELCOME & REGISTRATION SCREEN -->
+            <section id="screen-welcome" class="flex-1 flex items-center justify-center p-4 sm:p-8">
+                <div class="max-w-xl w-full bg-white rounded-2xl p-6 sm:p-8 shadow-md border border-amber-100 text-center relative overflow-hidden">
+                    <div class="absolute -top-12 -right-12 w-40 h-40 bg-nature-leaf/20 rounded-full blur-2xl opacity-60"></div>
+                    
+                    <div class="mb-6 relative">
+                        <img src="https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=800&q=80" 
+                             alt="African Wildlife" 
+                             class="w-full h-44 object-cover rounded-xl shadow-sm border border-amber-100">
+                        <div class="absolute inset-0 bg-gradient-to-t from-nature-dark/80 via-black/20 to-transparent rounded-xl flex items-end p-4">
+                            <span class="text-nature-dark text-xs font-bold bg-nature-sun px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                                Elephant Conservation Mission
+                            </span>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl sm:text-3xl font-black text-nature-dark mb-2">Welcome, Young Explorer! 🐘</h2>
+                    <p class="text-slate-600 text-sm sm:text-base mb-6 leading-relaxed">
+                        Ready to save the wild? Complete the story about African elephants using context clues.
+                    </p>
+
+                    <form onsubmit="event.preventDefault(); startGame();" class="space-y-4 text-left">
+                        <div>
+                            <label for="input-student-name" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                                Enter Student Name:
+                            </label>
+                            <div class="relative">
+                                <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" id="input-student-name" required placeholder="e.g. Alex Wong (F.2A)" 
+                                       class="w-full pl-10 pr-4 py-3 bg-nature-bg border-2 border-amber-200/80 rounded-xl font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-nature-olive focus:bg-white transition text-base">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-nature-olive hover:bg-jungle-600 active:scale-[0.99] text-white font-bold py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-base cursor-pointer">
+                            <span>Start Mission</span>
+                            <i class="fa-solid fa-circle-arrow-right"></i>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- PAGE 2: GAME WORKING AREA (PARALLEL SIDE-BY-SIDE LAYOUT FOR IPAD) -->
+            <section id="screen-game" class="hidden flex-1 flex flex-row w-full h-full overflow-hidden">
+                
+                <!-- LEFT COLUMN: Parallel Word Bank Panel -->
+                <div class="w-72 sm:w-80 md:w-80 lg:w-88 bg-nature-bg border-r border-amber-200/60 p-2.5 sm:p-3 md:p-4 flex flex-col shrink-0">
+                    <div class="bg-white rounded-xl p-3 shadow-sm border border-amber-100 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-nature-olive text-white text-xs font-black uppercase px-2.5 py-1 rounded-md shadow-sm">Word Bank</span>
+                            </div>
+                            <button onclick="clearAllSelections()" class="text-xs font-bold text-nature-peach hover:text-amber-700 flex items-center gap-1 p-1 touch-manipulation">
+                                <i class="fa-solid fa-rotate-left"></i> Clear
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-2 leading-snug">Tap or drag a word, then tap a blank in the passage on the right.</p>
+
+                        <div id="word-bank-container" class="flex flex-wrap gap-1.5 p-1 overflow-y-auto max-h-full">
+                            <!-- Word chips populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Story Passage & Working Area -->
+                <div class="flex-1 overflow-y-auto p-3 sm:p-5 md:p-6 lg:p-8 working-area-bg flex flex-col justify-between">
+                    <div>
+                        <!-- Game Status Bar -->
+                        <div class="flex flex-wrap items-center justify-between gap-3 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-sm border border-amber-100/80 mb-5">
+                            <div class="flex items-center gap-2 text-slate-700 font-bold text-xs sm:text-sm">
+                                <i class="fa-solid fa-circle-info text-nature-olive"></i>
+                                <span>Progress: <strong id="progress-count" class="text-nature-dark">0</strong> / 10 Blanks Filled</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="skipAndGrade()" class="px-3 py-1.5 bg-amber-100/80 hover:bg-amber-200 text-amber-900 text-xs font-bold rounded-lg transition border border-amber-300/80">
+                                    <i class="fa-solid fa-forward"></i> Skip Unfilled & Grade
+                                </button>
+                                <button onclick="submitGame()" class="px-4 py-1.5 bg-nature-olive hover:bg-jungle-600 text-white text-xs sm:text-sm font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-check-double"></i> Finish & Grade
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Story Passage Canvas -->
+                        <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 sm:p-7 shadow-sm border border-amber-100/80 leading-[2.5] text-slate-800 text-base sm:text-lg">
+                            <h3 class="text-xl sm:text-2xl font-black text-nature-dark mb-4 pb-2 border-b border-amber-100 flex items-center gap-2">
+                                <span>The African Elephant Story</span>
+                            </h3>
+
+                            <p class="mb-4">
+                                The African elephant is a 
+                                <span class="blank-drop-target" data-index="1" onclick="handleBlankClick(1)"></span>
+                                animal around the world that almost everyone recognizes. It is an 
+                                <span class="blank-drop-target" data-index="2" onclick="handleBlankClick(2)"></span>
+                                creature, weighing thousands of kilograms, but it still has the amazing 
+                                <span class="blank-drop-target" data-index="3" onclick="handleBlankClick(3)"></span>
+                                to walk very quietly through the forest.
+                            </p>
+
+                            <p class="mb-4">
+                                Sadly, people continue to 
+                                <span class="blank-drop-target" data-index="4" onclick="handleBlankClick(4)"></span>
+                                the trees and land where these animals live. As a result, elephants 
+                                <span class="blank-drop-target" data-index="5" onclick="handleBlankClick(5)"></span>
+                                from a loss of food and safe space. Today, they are listed as 
+                                <span class="blank-drop-target" data-index="6" onclick="handleBlankClick(6)"></span>,
+                                and experts worry they could face total 
+                                <span class="blank-drop-target" data-index="7" onclick="handleBlankClick(7)"></span>
+                                if we do not protect them.
+                            </p>
+
+                            <p>
+                                To help, governments must 
+                                <span class="blank-drop-target" data-index="8" onclick="handleBlankClick(8)"></span>
+                                to stop hunters from harming wildlife. Schools and local groups also need to 
+                                <span class="blank-drop-target" data-index="9" onclick="handleBlankClick(9)"></span>
+                                about why wild animals are important. If we take action now, we can 
+                                <span class="blank-drop-target" data-index="10" onclick="handleBlankClick(10)"></span>
+                                these amazing creatures so they stay safe in the wild for many years to come.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Direct Feedback Display Box (Shown after submission) -->
+                    <div id="working-feedback-box" class="hidden mt-6 bg-nature-dark text-white rounded-2xl p-5 shadow-lg border border-nature-olive">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div id="feedback-score-circle" class="w-12 h-12 rounded-full bg-nature-leaf text-nature-dark font-black text-xl flex items-center justify-center">
+                                    0/10
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-base text-amber-100">Grading Completed!</h4>
+                                    <p class="text-xs text-amber-200/90">Model answers are shown above directly in the text blanks.</p>
+                                </div>
+                            </div>
+                            <button onclick="goToReportScreen()" class="px-5 py-2.5 bg-nature-sun hover:bg-amber-300 text-nature-dark font-bold rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+                                <span>View & Download Report</span>
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- PAGE 3: REPORT & PDF DOWNLOAD SCREEN -->
+            <section id="screen-report" class="hidden flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-nature-bg flex flex-col items-center">
+                <div class="max-w-4xl w-full">
+
+                    <!-- ACTION BUTTONS TOP -->
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4 no-print">
+                        <button onclick="backToWorkingPage()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs sm:text-sm rounded-xl transition flex items-center gap-2">
+                            <i class="fa-solid fa-arrow-left"></i> Review Passage
+                        </button>
+                        <div class="flex items-center gap-2">
+                            <button onclick="downloadPDFReport()" class="px-5 py-2.5 bg-nature-olive hover:bg-jungle-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center gap-2">
+                                <i class="fa-solid fa-file-arrow-down"></i> Download PDF Report
+                            </button>
+                            <button onclick="resetApp()" class="px-4 py-2.5 bg-nature-dark hover:bg-slate-900 text-white font-bold text-xs sm:text-sm rounded-xl transition flex items-center gap-2">
+                                <i class="fa-solid fa-rotate"></i> Start Over
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PDF PRINTABLE REPORT CONTAINER -->
+                    <div id="report-pdf-area" class="bg-white rounded-2xl p-6 sm:p-10 shadow-md border border-amber-100">
+                        <div class="flex flex-wrap justify-between items-start pb-6 mb-6 border-b-2 border-nature-olive">
+                            <div>
+                                <span class="bg-nature-100 text-nature-dark text-xs font-black uppercase px-3 py-1 rounded-full">Official Student Evaluation</span>
+                                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">Vocabulary Assessment Report</h2>
+                                <p class="text-sm font-semibold text-slate-500">F.2 Unit 5 (1) Wonderful Wildlife</p>
+                            </div>
+                            <div class="text-right mt-2 sm:mt-0">
+                                <div class="text-3xl sm:text-4xl font-black text-nature-olive" id="report-final-score">0 / 10</div>
+                                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Full Marks: 10</div>
+                            </div>
+                        </div>
+
+                        <!-- Student Metadata -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-nature-bg p-4 rounded-xl border border-amber-100 mb-6 text-sm">
+                            <div><strong class="text-slate-500">Student Name:</strong> <span id="report-student-name" class="font-bold text-slate-900">--</span></div>
+                            <div><strong class="text-slate-500">Completion Date:</strong> <span id="report-date" class="font-bold text-slate-900">--</span></div>
+                        </div>
+
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-3 gap-3 mb-6 text-center">
+                            <div class="bg-nature-100/60 border border-nature-leaf/40 p-3 rounded-xl">
+                                <div class="text-xs font-bold text-nature-dark uppercase">Correct</div>
+                                <div id="summary-correct-count" class="text-2xl font-black text-nature-dark">0</div>
+                            </div>
+                            <div class="bg-rose-50 border border-rose-200 p-3 rounded-xl">
+                                <div class="text-xs font-bold text-rose-700 uppercase">Wrong</div>
+                                <div id="summary-wrong-count" class="text-2xl font-black text-rose-800">0</div>
+                            </div>
+                            <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl">
+                                <div class="text-xs font-bold text-amber-700 uppercase">Skipped</div>
+                                <div id="summary-skipped-count" class="text-2xl font-black text-amber-800">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Report Table (No Model Answer Column) -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm border-collapse">
+                                <thead>
+                                    <tr class="bg-nature-bg border-b-2 border-amber-100 text-slate-700 font-bold">
+                                        <th class="p-3">#</th>
+                                        <th class="p-3">Context / Blank</th>
+                                        <th class="p-3">Student's Response</th>
+                                        <th class="p-3 text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="report-table-body" class="divide-y divide-slate-100 text-slate-800">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-8 pt-4 border-t border-slate-200 text-center text-xs text-slate-400">
+                            Generated by F.2 English Wonderful Wildlife Learning App • Self-contained digital worksheet
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // Game Data & Answer Key
+        const GAME_ANSWERS = {
+            1: "well-known",
+            2: "enormous",
+            3: "ability",
+            4: "destroy",
+            5: "suffer",
+            6: "endangered animals",
+            7: "extinction",
+            8: "create laws",
+            9: "educate people",
+            10: "preserve"
+        };
+
+        const DISTRACTORS = ["social", "speedy", "save from", "important", "protection"];
+
+        // State variables
+        let currentStudentName = "";
+        let selectedWord = null;
+        let selectedChipElement = null;
+        let userBlanks = {}; // index -> word
+        let isSubmitted = false;
+
+        // Initialize Audio context for SFX
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSFX(freq, type = 'sine', duration = 0.15) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // Speech synthesis for word pronunciation
+        function speakWord(e, word) {
+            if (e) e.stopPropagation();
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(word);
+                u.lang = 'en-US';
+                u.rate = 0.9;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // START GAME
+        function startGame() {
+            const nameInput = document.getElementById('input-student-name').value.trim();
+            if (!nameInput) return;
+
+            currentStudentName = nameInput;
+            document.getElementById('header-student-name').innerText = currentStudentName;
+            document.getElementById('header-user-badge').classList.remove('hidden');
+
+            // Reset state
+            userBlanks = {};
+            selectedWord = null;
+            selectedChipElement = null;
+            isSubmitted = false;
+
+            document.getElementById('working-feedback-box').classList.add('hidden');
+
+            // Render word bank (10 correct + 5 distractors shuffled)
+            renderWordBank();
+
+            // Render story blanks
+            resetStoryBlanks();
+
+            // Switch screens
+            showScreen('screen-game');
+            playSFX(523, 'triangle', 0.2);
+        }
+
+        // Render Word Bank Chips
+        function renderWordBank() {
+            const container = document.getElementById('word-bank-container');
+            container.innerHTML = '';
+
+            const allWords = [...Object.values(GAME_ANSWERS), ...DISTRACTORS];
+            // Shuffle
+            const shuffled = allWords.sort(() => Math.random() - 0.5);
+
+            shuffled.forEach(word => {
+                const chip = document.createElement('div');
+                chip.className = 'word-chip bg-nature-50 hover:bg-nature-100 border border-nature-leaf/50 text-nature-dark px-2.5 py-1.5 rounded-lg font-bold text-xs sm:text-sm cursor-pointer flex items-center justify-between gap-1 shadow-sm touch-manipulation';
+                chip.setAttribute('data-word', word);
+                chip.draggable = true;
+
+                chip.innerHTML = `
+                    <span class="truncate">${word}</span>
+                    <button onclick="speakWord(event, '${word}')" title="Listen Pronunciation" class="text-nature-olive/70 hover:text-nature-dark p-0.5 rounded-full hover:bg-nature-200 transition shrink-0">
+                        <i class="fa-solid fa-volume-low text-xs"></i>
+                    </button>
+                `;
+
+                // Drag and drop event listeners
+                chip.addEventListener('dragstart', (e) => {
+                    if (chip.classList.contains('used') || isSubmitted) return;
+                    e.dataTransfer.setData('text/plain', word);
+                    selectChip(chip, word);
+                });
+
+                chip.addEventListener('click', () => {
+                    if (isSubmitted) return;
+                    if (chip.classList.contains('used')) return;
+                    selectChip(chip, word);
+                });
+
+                container.appendChild(chip);
+            });
+        }
+
+        function selectChip(chip, word) {
+            if (selectedChipElement === chip) {
+                // Deselect
+                chip.classList.remove('selected');
+                selectedWord = null;
+                selectedChipElement = null;
+                playSFX(300, 'sine', 0.1);
+            } else {
+                document.querySelectorAll('.word-chip').forEach(c => c.classList.remove('selected'));
+                chip.classList.add('selected');
+                selectedWord = word;
+                selectedChipElement = chip;
+                playSFX(440, 'sine', 0.1);
+            }
+        }
+
+        function resetStoryBlanks() {
+            document.querySelectorAll('.blank-drop-target').forEach(blank => {
+                const idx = blank.getAttribute('data-index');
+                blank.className = 'blank-drop-target';
+                blank.innerHTML = `(${idx}) ____________`;
+
+                // Drag over events
+                blank.ondragover = (e) => { e.preventDefault(); blank.classList.add('drag-over'); };
+                blank.ondragleave = () => blank.classList.remove('drag-over');
+                blank.ondrop = (e) => {
+                    e.preventDefault();
+                    blank.classList.remove('drag-over');
+                    const word = e.dataTransfer.getData('text/plain');
+                    if (word && !isSubmitted) {
+                        fillBlank(idx, word);
+                    }
+                };
+            });
+            updateProgress();
+        }
+
+        // Blank Click Handler
+        function handleBlankClick(index) {
+            if (isSubmitted) return;
+
+            const existingWord = userBlanks[index];
+            const targetBlank = document.querySelector(`.blank-drop-target[data-index="${index}"]`);
+
+            // If blank has word and no new word is selected, clear it
+            if (existingWord && !selectedWord) {
+                clearBlank(index);
+                playSFX(250, 'sine', 0.1);
+                return;
+            }
+
+            // If a word chip is selected, insert it
+            if (selectedWord) {
+                // If this blank had another word, return old word to bank
+                if (existingWord) {
+                    markWordInBank(existingWord, false);
+                }
+                fillBlank(index, selectedWord);
+            }
+        }
+
+        function fillBlank(index, word) {
+            userBlanks[index] = word;
+            const targetBlank = document.querySelector(`.blank-drop-target[data-index="${index}"]`);
+            targetBlank.innerText = word;
+            targetBlank.classList.add('filled');
+
+            // Mark chip as used
+            markWordInBank(word, true);
+
+            // Deselect active chip
+            if (selectedChipElement) {
+                selectedChipElement.classList.remove('selected');
+            }
+            selectedWord = null;
+            selectedChipElement = null;
+
+            updateProgress();
+            playSFX(587, 'sine', 0.12);
+        }
+
+        function clearBlank(index) {
+            const word = userBlanks[index];
+            if (word) {
+                markWordInBank(word, false);
+                delete userBlanks[index];
+                const targetBlank = document.querySelector(`.blank-drop-target[data-index="${index}"]`);
+                targetBlank.className = 'blank-drop-target';
+                targetBlank.innerHTML = `(${index}) ____________`;
+                updateProgress();
+            }
+        }
+
+        function clearAllSelections() {
+            if (isSubmitted) return;
+            Object.keys(userBlanks).forEach(idx => clearBlank(idx));
+            playSFX(200, 'triangle', 0.2);
+        }
+
+        function markWordInBank(word, isUsed) {
+            const chip = document.querySelector(`.word-chip[data-word="${word}"]`);
+            if (chip) {
+                if (isUsed) {
+                    chip.classList.add('used');
+                } else {
+                    chip.classList.remove('used');
+                }
+            }
+        }
+
+        function updateProgress() {
+            const filledCount = Object.keys(userBlanks).length;
+            document.getElementById('progress-count').innerText = filledCount;
+        }
+
+        function skipAndGrade() {
+            submitGame();
+        }
+
+        // SUBMIT & GRADE GAME
+        function submitGame() {
+            if (isSubmitted) return;
+            isSubmitted = true;
+
+            let correctCount = 0;
+            let wrongCount = 0;
+            let skippedCount = 0;
+
+            // Apply direct feedback on working page
+            for (let i = 1; i <= 10; i++) {
+                const userAns = userBlanks[i];
+                const modelAns = GAME_ANSWERS[i];
+                const blankElem = document.querySelector(`.blank-drop-target[data-index="${i}"]`);
+
+                if (!userAns) {
+                    skippedCount++;
+                    blankElem.innerHTML = `
+                        <span class="line-through opacity-70">(${i}) Skipped</span>
+                        <span class="text-xs font-black text-amber-900 bg-amber-200/90 px-1.5 py-0.5 rounded ml-1">Ans: ${modelAns}</span>
+                    `;
+                    blankElem.className = 'blank-drop-target feedback-badge-skipped';
+                } else if (userAns.toLowerCase() === modelAns.toLowerCase()) {
+                    correctCount++;
+                    blankElem.innerHTML = `
+                        <span>${userAns}</span>
+                        <i class="fa-solid fa-check text-xs ml-1"></i>
+                    `;
+                    blankElem.className = 'blank-drop-target feedback-badge-correct';
+                } else {
+                    wrongCount++;
+                    blankElem.innerHTML = `
+                        <span class="line-through">${userAns}</span>
+                        <span class="text-xs font-black text-rose-900 bg-rose-200/90 px-1.5 py-0.5 rounded ml-1">Ans: ${modelAns}</span>
+                    `;
+                    blankElem.className = 'blank-drop-target feedback-badge-wrong';
+                }
+            }
+
+            // Display Feedback Box
+            document.getElementById('feedback-score-circle').innerText = `${correctCount}/10`;
+            document.getElementById('working-feedback-box').classList.remove('hidden');
+
+            // Sound
+            if (correctCount >= 8) playSFX(880, 'sine', 0.3);
+            else playSFX(350, 'square', 0.3);
+
+            // Populate Report Screen
+            buildReport(correctCount, wrongCount, skippedCount);
+        }
+
+        // BUILD REPORT TABLE (EXCLUDES MODEL ANSWER COLUMN)
+        function buildReport(correctCount, wrongCount, skippedCount) {
+            document.getElementById('report-student-name').innerText = currentStudentName;
+            document.getElementById('report-date').innerText = new Date().toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            document.getElementById('report-final-score').innerText = `${correctCount} / 10`;
+
+            document.getElementById('summary-correct-count').innerText = correctCount;
+            document.getElementById('summary-wrong-count').innerText = wrongCount;
+            document.getElementById('summary-skipped-count').innerText = skippedCount;
+
+            const tableBody = document.getElementById('report-table-body');
+            tableBody.innerHTML = '';
+
+            const contexts = [
+                "The African elephant is a (1) _____ animal...",
+                "It is an (2) _____ creature, weighing thousands...",
+                "...has the amazing (3) _____ to walk quietly...",
+                "Sadly, people continue to (4) _____ the trees...",
+                "...elephants (5) _____ from a loss of food...",
+                "Today, they are listed as (6) _____...",
+                "...worry they could face total (7) _____...",
+                "...governments must (8) _____ to stop hunters...",
+                "...local groups need to (9) _____ about wild animals...",
+                "...we can (10) _____ these amazing creatures..."
+            ];
+
+            for (let i = 1; i <= 10; i++) {
+                const userAns = userBlanks[i];
+                const modelAns = GAME_ANSWERS[i];
+                let statusBadge = '';
+                let displayResponse = userAns || '<em>[Skipped]</em>';
+
+                if (!userAns) {
+                    statusBadge = `<span class="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-md border border-amber-300">Skipped</span>`;
+                } else if (userAns.toLowerCase() === modelAns.toLowerCase()) {
+                    statusBadge = `<span class="px-2 py-1 bg-nature-100 text-nature-dark text-xs font-bold rounded-md border border-nature-leaf/60">Correct</span>`;
+                } else {
+                    statusBadge = `<span class="px-2 py-1 bg-rose-100 text-rose-800 text-xs font-bold rounded-md border border-rose-300">Wrong</span>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = i % 2 === 0 ? 'bg-nature-bg/60' : 'bg-white';
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-slate-500">${i}</td>
+                    <td class="p-3 font-medium text-slate-700 text-xs sm:text-sm">${contexts[i-1]}</td>
+                    <td class="p-3 font-bold text-slate-900">${displayResponse}</td>
+                    <td class="p-3 text-center">${statusBadge}</td>
+                `;
+                tableBody.appendChild(tr);
+            }
+        }
+
+        function goToReportScreen() {
+            showScreen('screen-report');
+        }
+
+        function backToWorkingPage() {
+            showScreen('screen-game');
+        }
+
+        function downloadPDFReport() {
+            const reportElem = document.getElementById('report-pdf-area');
+            const cleanName = currentStudentName.replace(/[^a-zA-Z0-9]/g, '_');
+            
+            const opt = {
+                margin:       [10, 10, 10, 10],
+                filename:     `Wildlife_Vocab_Report_${cleanName}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(reportElem).save();
+        }
+
+        function resetApp() {
+            document.getElementById('input-student-name').value = '';
+            showScreen('screen-welcome');
+        }
+
+        function showScreen(screenId) {
+            document.getElementById('screen-welcome').classList.add('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-report').classList.add('hidden');
+
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
